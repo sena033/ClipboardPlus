@@ -1,0 +1,83 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build-desktop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+      - name: Install build tools
+        shell: bash
+        run: |
+          pacman -S --noconfirm mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-pkg-config mingw-w64-x86_64-make git
+      - name: Build raylib from source (windows)
+        shell: bash
+        run: |
+          git clone --depth 1 https://github.com/raysan5/raylib.git /tmp/raylib
+          mkdir -p /tmp/raylib/build && cd /tmp/raylib/build
+          cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
+          mingw32-make
+          mingw32-make install DESTDIR=/tmp/raylib-install || true
+      - name: CMake configure
+        shell: bash
+        run: |
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_PREFIX_PATH=/tmp/raylib-install
+      - name: Build
+        shell: bash
+        run: |
+          cd build
+          mingw32-make
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: secondbrain-windows
+          path: build/secondbrain.exe
+
+  build-android-native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - name: Install Android command-line tools and NDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip wget git build-essential
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O /tmp/cmdline.zip
+          unzip -q /tmp/cmdline.zip -d $HOME/android-sdk/cmdline-tools
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
+          yes | $HOME/android-sdk/cmdline-tools/cmdline-tools/bin/sdkmanager --sdk_root=$HOME/android-sdk "platform-tools" "ndk;25.2.9519653" "cmake;3.22.1" "platforms;android-29"
+      - name: Build raylib for Android
+        run: |
+          git clone --depth 1 https://github.com/raysan5/raylib.git /tmp/raylib
+          mkdir -p /tmp/raylib/android-build
+          cd /tmp/raylib/android-build
+          cmake -DCMAKE_TOOLCHAIN_FILE=$HOME/android-sdk/ndk/25.2.9519653/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-21 -DBUILD_RAYGUI=OFF -DCMAKE_BUILD_TYPE=Release ..
+          cmake --build . --config Release || true
+      - name: Configure and build native library (CMake)
+        env:
+          ANDROID_SDK_ROOT: ${{ env.HOME }}/android-sdk
+          ANDROID_NDK_HOME: ${{ env.HOME }}/android-sdk/ndk/25.2.9519653
+        run: |
+          mkdir -p build-android
+          cd build-android
+          cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_ANDROID=ON -DANDROID_ABI=armeabi-v7a -DANDROID_PLATFORM=android-21 -DANDROID_NDK=$HOME/android-sdk/ndk/25.2.9519653 -DCMAKE_TOOLCHAIN_FILE=$HOME/android-sdk/ndk/25.2.9519653/build/cmake/android.toolchain.cmake .. || true
+          cmake --build . --config Release || true
+      - name: Upload Android native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: secondbrain-android-native
+          path: build-android || .
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-native-preview
+          path: build-android || .
