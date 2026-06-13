@@ -1,6 +1,0 @@
-[submodule "third_party/raylib"]
-	path = third_party/raylib
-	url = https://github.com/raysan5/raylib.git
-[submodule "vcpkg"]
-	path = vcpkg
-	url = https://github.com/microsoft/vcpkg.git
