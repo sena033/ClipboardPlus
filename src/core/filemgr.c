@@ -2,6 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#ifdef _WIN32
+#include "filemgr_win_compat.h"
+#else
+#include <sys/stat.h>
+#include <dirent.h>
+#endif
 
 int filemgr_load_note(const char* path, note_t* out) {
     if (!path || !out) return -1;
@@ -38,14 +45,16 @@ int filemgr_save_note(const char* path, const note_t* note) {
 }
 
 int filemgr_ensure_notes_dir(void) {
-    #ifdef _WIN32
     const char* dir = "notes";
-    int rc = _mkdir(dir);
-    if (rc != 0 && errno != EEXIST) return -1;
+    #ifdef _WIN32
+    if (_mkdir(dir) != 0) {
+        if (errno != EEXIST) return -1;
+    }
     return 0;
     #else
-    const char* dir = "notes";
-    if (mkdir(dir, 0755) != 0 && errno != EEXIST) return -1;
+    if (mkdir(dir, 0755) != 0) {
+        if (errno != EEXIST) return -1;
+    }
     return 0;
     #endif
 }

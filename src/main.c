@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "note.h"
+#include "filemgr.h"
 #include "ui.h"
 
 int main(int argc, char** argv) {
