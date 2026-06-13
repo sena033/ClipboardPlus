@@ -74,6 +74,13 @@ export default function App() {
 
   const showToast = useCallback((msg: string) => { setToast(msg); }, []);
 
+  // Listen for open-settings from menu
+  useEffect(() => {
+    const handler = () => setSettingsOpen(true);
+    window.electronAPI.on('open-settings', handler);
+    return () => window.electronAPI.removeListener('open-settings', handler);
+  }, []);
+
   // Apply theme when settings load or change
   useEffect(() => {
     if (settings) {

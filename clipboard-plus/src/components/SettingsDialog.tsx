@@ -184,13 +184,13 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
           <div className="theme-toggle">
             <button
               className={`theme-btn${theme === 'dark' ? ' active' : ''}`}
-              onClick={() => setTheme('dark')}
+              onClick={() => { setTheme('dark'); setAccentColor('#89b4fa'); setBgColor('#1e1e2e'); }}
             >
               🌙 {t('settings.theme.dark')}
             </button>
             <button
               className={`theme-btn${theme === 'light' ? ' active' : ''}`}
-              onClick={() => setTheme('light')}
+              onClick={() => { setTheme('light'); setAccentColor('#4375e0'); setBgColor('#f5f5f0'); }}
             >
               ☀️ {t('settings.theme.light')}
             </button>

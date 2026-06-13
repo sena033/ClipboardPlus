@@ -189,6 +189,17 @@ function createTray() {
   tray.on('click', () => toggleWindow());
 }
 
+// ── Show Window (always show, no toggle) ──
+function showWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isVisible()) return;
+  const pos = calcWindowPos();
+  mainWindow.setPosition(pos.x, pos.y);
+  mainWindow.show();
+  mainWindow.focus();
+  mainWindow.webContents.send('clipboard-update', history);
+}
+
 // ── Application Menu ──
 function createAppMenu() {
   const isZh = settings.language === 'zh';
@@ -196,7 +207,7 @@ function createAppMenu() {
     {
       label: isZh ? '文件' : 'File',
       submenu: [
-        { label: isZh ? '设置' : 'Settings', accelerator: 'Ctrl+,', click: () => { mainWindow?.webContents.send('open-settings'); toggleWindow(); } },
+        { label: isZh ? '设置' : 'Settings', accelerator: 'Ctrl+,', click: () => { try { mainWindow?.webContents.send('open-settings'); } catch (_) {} showWindow(); } },
         { type: 'separator' },
         { label: isZh ? '退出' : 'Quit', accelerator: 'Alt+F4', click: () => { app.isQuitting = true; app.quit(); } },
       ],
