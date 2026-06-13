@@ -1,4 +1,5 @@
 #include "note.h"
+#include <stdlib.h>
 #include <string.h>
 
 void note_init(note_t* n, const char* title, const char* content) {

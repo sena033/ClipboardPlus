@@ -1,11 +1,12 @@
 #include "ui.h"
+#include "theme.h"
 #include <raylib.h>
 #include "../core/filemgr.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "../core/markdown.h"
 #include "../core/graph.h"
-#include "../core/filemgr.h"
 
 // Simple editor state
 static char* edit_buf = NULL;
@@ -80,6 +81,7 @@ static void flush_editor_to_note(note_t* note) {
 }
 
 void ui_run(note_t* note) {
+    const ui_theme_t* theme = ui_get_theme();
     // initialize editor with note
     load_note_into_editor(note);
     update_preview();
