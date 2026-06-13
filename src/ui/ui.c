@@ -7,6 +7,7 @@
 #include <string.h>
 #include "../core/markdown.h"
 #include "../core/graph.h"
+#include "../core/rtext_extra.h"
 
 // Simple editor state
 static char* edit_buf = NULL;

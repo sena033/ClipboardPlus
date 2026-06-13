@@ -14,6 +14,7 @@ if(NOT BUILD_ANDROID)
     src/core/markdown.c
     src/core/filemgr.c
     src/core/graph.c
+    src/core/rtext_extra.c
     src/ui/ui.c
     src/ui/theme.c
   )
