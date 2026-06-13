@@ -37,16 +37,16 @@ jobs:
       - name: CMake configure
         shell: bash
         run: |
-      set -e
-      mkdir -p build && cd build
-      # Force MinGW Makefiles generator so mingw32-make finds a Makefile
-      # (without -G CMake may choose Visual Studio generator on hosted
-      # Windows runners which produces no Makefile for mingw32-make).
-      # Ensure CMake can find raylib's installed config files and build type
-      cmake -G "MinGW Makefiles" .. \
-        -DCMAKE_PREFIX_PATH=/tmp/raylib-install \
-        -Draylib_DIR=/tmp/raylib-install/lib/cmake/raylib \
-        -DCMAKE_BUILD_TYPE=Release
+          set -e
+          mkdir -p build && cd build
+          # Force MinGW Makefiles generator so mingw32-make finds a Makefile
+          # (without -G CMake may choose Visual Studio generator on hosted
+          # Windows runners which produces no Makefile for mingw32-make).
+          # Ensure CMake can find raylib's installed config files and build type
+          cmake -G "MinGW Makefiles" .. \
+            -DCMAKE_PREFIX_PATH=/tmp/raylib-install \
+            -Draylib_DIR=/tmp/raylib-install/lib/cmake/raylib \
+            -DCMAKE_BUILD_TYPE=Release
       - name: Build
         shell: bash
         run: |
