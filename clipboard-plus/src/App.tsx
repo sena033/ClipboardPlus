@@ -39,7 +39,6 @@ function groupCounts(entries: ClipboardEntry[]): Record<string, number> {
 }
 
 function filterByGroup(entries: ClipboardEntry[], group: GroupKey): ClipboardEntry[] {
-  // Archived entries only show in 'archived' group
   const active = group !== 'archived' ? entries.filter(e => !e.archived) : entries;
   switch (group) {
     case 'all': return active;
@@ -63,7 +62,7 @@ function applyTheme(settings: AppSettings) {
 }
 
 export default function App() {
-  const { history, deleteEntry, toggleFavorite, toggleArchive, copyToClipboard, pasteEntry, clearHistory } = useHistory();
+  const { history, deleteEntry, deleteEntries, toggleFavorite, toggleArchive, copyToClipboard, pasteEntry, clearHistory } = useHistory();
   const { settings, updateSettings } = useSettings();
 
   const [search, setSearch] = useState('');
@@ -97,7 +96,14 @@ export default function App() {
   );
   const selected = history.find(e => e.id === selectedId) || null;
 
-  const handleSelect = useCallback((id: string) => { setSelectedId(id); }, []);
+  const handleSelect = useCallback(async (entry: ClipboardEntry) => {
+    setSelectedId(entry.id);
+    if (settings?.autoPaste) {
+      await pasteEntry(entry.content);
+      showToast(t('entry.pasted'));
+    }
+  }, [settings, pasteEntry, showToast]);
+
   const handleCopy = useCallback(async (entry: ClipboardEntry) => {
     await copyToClipboard(entry.content); showToast(t('entry.copied'));
   }, [copyToClipboard, showToast]);
@@ -117,11 +123,23 @@ export default function App() {
     await toggleArchive(id);
     showToast(entry?.archived ? t('notify.unarchived') : t('notify.archived'));
   }, [history, toggleArchive, showToast]);
-  const handleClearAll = useCallback(async () => {
-    await clearHistory(); setSelectedId(null); showToast(t('notify.cleared'));
-  }, [clearHistory, showToast]);
+
+  // Context-aware clear: only clear entries in the current group
+  const handleClearGroup = useCallback(async () => {
+    const toDelete = grouped.map(e => e.id);
+    if (toDelete.length === 0) return;
+    await deleteEntries(toDelete);
+    setSelectedId(null);
+    const groupLabel = settings?.groupLabels?.[selectedGroup] || t(`group.${selectedGroup}`);
+    showToast(t('notify.cleared', { group: groupLabel }));
+  }, [grouped, deleteEntries, selectedGroup, settings, showToast]);
+
   const handleSaveSettings = useCallback(async (s: Partial<AppSettings>) => {
     if (settings) { await updateSettings(s); showToast(t('settings.saved')); }
+  }, [settings, updateSettings, showToast]);
+
+  const handleApplySettings = useCallback(async (s: Partial<AppSettings>) => {
+    if (settings) { await updateSettings(s); showToast(t('settings.apply_success')); }
   }, [settings, updateSettings, showToast]);
 
   const hotkeyDisplay = settings?.hotkey
@@ -129,13 +147,20 @@ export default function App() {
 
   const enabledGroups = settings?.enabledGroups ?? ['all', 'favorites', 'today', 'yesterday', 'week', 'month', 'older', 'archived'];
   const groupLabels = settings?.groupLabels ?? {};
+  const groupLabel = groupLabels[selectedGroup] || t(`group.${selectedGroup}`);
 
   return (
     <div className="app">
       <div className="toolbar">
         <button className="toolbar-btn" onClick={() => setSettingsOpen(true)} title={t('context.settings')}>☰</button>
         <SearchBar value={search} onChange={setSearch} />
-        <button className="toolbar-btn danger" onClick={handleClearAll} title={t('context.clear_all')}>✕</button>
+        <button
+          className="toolbar-btn danger"
+          onClick={handleClearGroup}
+          title={t('context.clear_group', { group: groupLabel })}
+        >
+          ✕
+        </button>
       </div>
 
       <div className="main-content">
@@ -163,7 +188,13 @@ export default function App() {
         <span><kbd>{hotkeyDisplay}</kbd> {t('footer.hotkey', { hotkey: '' }).replace('{hotkey}', '')}</span>
       </div>
 
-      <SettingsDialog open={settingsOpen} settings={settings} onSave={handleSaveSettings} onClose={() => setSettingsOpen(false)} />
+      <SettingsDialog
+        open={settingsOpen}
+        settings={settings}
+        onSave={handleSaveSettings}
+        onApply={handleApplySettings}
+        onClose={() => setSettingsOpen(false)}
+      />
       <Toast message={toast} onDone={() => setToast(null)} />
     </div>
   );

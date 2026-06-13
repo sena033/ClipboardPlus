@@ -15,6 +15,11 @@ export function useHistory() {
     await window.electronAPI.clipboard.deleteEntry(id);
   }, []);
 
+  const deleteEntries = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return;
+    await window.electronAPI.clipboard.deleteEntries(ids);
+  }, []);
+
   const toggleFavorite = useCallback(async (id: string) => {
     await window.electronAPI.clipboard.toggleFavorite(id);
   }, []);
@@ -35,5 +40,5 @@ export function useHistory() {
     await window.electronAPI.clipboard.clearHistory();
   }, []);
 
-  return { history, deleteEntry, toggleFavorite, toggleArchive, copyToClipboard, pasteEntry, clearHistory };
+  return { history, deleteEntry, deleteEntries, toggleFavorite, toggleArchive, copyToClipboard, pasteEntry, clearHistory };
 }

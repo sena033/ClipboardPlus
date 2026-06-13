@@ -82,6 +82,10 @@ const zh: Record<string, string> = {
   'settings.save': '保存',
   'settings.cancel': '取消',
   'settings.saved': '设置已保存',
+  'settings.apply': '应用',
+  'settings.apply_success': '设置已应用',
+  'settings.auto_paste': '单击自动粘贴',
+  'settings.auto_paste_hint': '点击条目时自动粘贴到当前窗口（类似 Win+V）',
   'settings.hotkey_conflict': '快捷键注册失败，请尝试其他组合键',
   'settings.sidebar': '侧边栏分组',
   'settings.group_visible': '显示分组',
@@ -96,10 +100,11 @@ const zh: Record<string, string> = {
   'context.archive': '归档',
   'context.unarchive': '取消归档',
   'context.clear_all': '清空全部',
+  'context.clear_group': '清除{group}',
   'context.settings': '设置',
 
   // Notifications
-  'notify.cleared': '已清空全部记录',
+  'notify.cleared': '已清空{group}记录',
   'notify.deleted': '已删除',
   'notify.favorited': '已收藏',
   'notify.unfavorited': '已取消收藏',

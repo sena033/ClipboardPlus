@@ -27,6 +27,7 @@ const DEFAULT_SETTINGS = {
   wallpaperFit: 'cover',
   enabledGroups: ['all', 'favorites', 'today', 'yesterday', 'week', 'month', 'older', 'archived'],
   groupLabels: {},
+  autoPaste: false,
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -319,6 +320,9 @@ function setupIPC() {
   ipcMain.handle('clipboard:deleteEntry', (_, id) => {
     history = history.filter(e => e.id !== id); saveHistory(); notifyUpdate();
   });
+  ipcMain.handle('clipboard:deleteEntries', (_, ids) => {
+    history = history.filter(e => !ids.includes(e.id)); saveHistory(); notifyUpdate();
+  });
   ipcMain.handle('clipboard:toggleFavorite', (_, id) => {
     const entry = history.find(e => e.id === id);
     if (entry) { entry.favorite = !entry.favorite; saveHistory(); notifyUpdate(); }
@@ -373,6 +377,7 @@ function setupIPC() {
   // App
   ipcMain.handle('app:getVersion', () => app.getVersion());
   ipcMain.on('app:quit', () => { app.isQuitting = true; app.quit(); });
+  ipcMain.on('app:hide', () => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide(); });
 }
 
 // ── App Lifecycle ──

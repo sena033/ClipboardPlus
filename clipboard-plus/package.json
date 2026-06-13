@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Clipboard history manager with system tray, global hotkey, and search",
   "author": "SecondBrain",
-  "repository": "https://github.com/sena033/gi-thub-workspace",
+  "repository": "https://github.com/sena033/ClipboardPlus",
   "license": "MIT",
   "type": "module",
   "main": "electron/main.cjs",
@@ -48,7 +48,14 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "perMachine": true
+      "perMachine": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Clipboard Plus",
+      "installerLanguages": ["zh_CN", "en_US"],
+      "unicode": true,
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
     }
   }
 }

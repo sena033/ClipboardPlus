@@ -6,7 +6,7 @@ import EntryItem from './EntryItem';
 interface Props {
   entries: ClipboardEntry[];
   selectedId: string | null;
-  onSelect: (id: string) => void;
+  onSelect: (entry: ClipboardEntry) => void;
   onCopy: (entry: ClipboardEntry) => void;
   onPaste: (entry: ClipboardEntry) => void;
   onDelete: (id: string) => void;
@@ -61,7 +61,7 @@ export default function EntryList({ entries, selectedId, onSelect, onCopy, onPas
       }
 
       if (newIdx !== idx && newIdx >= 0) {
-        onSelect(entries[newIdx].id);
+        onSelect(entries[newIdx]);
       }
     };
 
@@ -86,7 +86,7 @@ export default function EntryList({ entries, selectedId, onSelect, onCopy, onPas
           <EntryItem
             entry={entry}
             isSelected={selectedId === entry.id}
-            onSelect={() => onSelect(entry.id)}
+            onSelect={() => onSelect(entry)}
             onCopy={() => onCopy(entry)}
             onPaste={() => onPaste(entry)}
             onDelete={() => onDelete(entry.id)}

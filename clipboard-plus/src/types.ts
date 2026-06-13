@@ -30,6 +30,7 @@ export interface AppSettings {
   wallpaperFit: WallpaperFit;
   enabledGroups: GroupKey[];
   groupLabels: Record<string, string>;
+  autoPaste: boolean;
 }
 
 export interface ElectronAPI {
@@ -37,6 +38,7 @@ export interface ElectronAPI {
     getHistory: () => Promise<ClipboardEntry[]>;
     clearHistory: () => Promise<void>;
     deleteEntry: (id: string) => Promise<void>;
+    deleteEntries: (ids: string[]) => Promise<void>;
     toggleFavorite: (id: string) => Promise<void>;
     toggleArchive: (id: string) => Promise<void>;
     copyToClipboard: (content: string) => Promise<void>;
@@ -49,6 +51,7 @@ export interface ElectronAPI {
   };
   app: {
     getVersion: () => Promise<string>;
+    hide: () => void;
     quit: () => void;
   };
   dialog: {

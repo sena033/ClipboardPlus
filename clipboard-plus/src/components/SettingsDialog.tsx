@@ -7,6 +7,7 @@ interface Props {
   open: boolean;
   settings: AppSettings | null;
   onSave: (s: Partial<AppSettings>) => void;
+  onApply: (s: Partial<AppSettings>) => void;
   onClose: () => void;
 }
 
@@ -14,7 +15,32 @@ function formatHotkey(key: string): string {
   return key.replace('Super', 'Win').replace('CommandOrControl', 'Ctrl').replace('+', ' + ');
 }
 
-export default function SettingsDialog({ open, settings, onSave, onClose }: Props) {
+function previewWallpaper(path: string) {
+  const root = document.documentElement;
+  if (path) {
+    root.style.setProperty('--wallpaper', `url("file:///${path.replace(/\\/g, '/')}")`);
+  } else {
+    root.style.setProperty('--wallpaper', 'none');
+  }
+}
+
+function previewAccent(color: string) {
+  document.documentElement.style.setProperty('--accent', color);
+}
+
+function previewBg(color: string) {
+  document.documentElement.style.setProperty('--bg-primary', color);
+}
+
+function previewWallpaperFit(fit: string) {
+  document.documentElement.style.setProperty('--wallpaper-fit', fit);
+}
+
+function previewTheme(mode: 'dark' | 'light') {
+  document.documentElement.setAttribute('data-theme', mode);
+}
+
+export default function SettingsDialog({ open, settings, onSave, onApply, onClose }: Props) {
   const [hotkey, setHotkey] = useState('');
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const [maxHist, setMaxHist] = useState(100);
@@ -26,10 +52,12 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
   const [wallpaperPath, setWallpaperPath] = useState('');
   const [theme, setTheme] = useState<ThemeMode>('dark');
   const [wallpaperFit, setWallpaperFit] = useState<WallpaperFit>('cover');
+  const [autoPaste, setAutoPaste] = useState(false);
   const [enabledGroups, setEnabledGroups] = useState<GroupKey[]>(ALL_GROUPS);
   const [groupLabels, setGroupLabels] = useState<Record<string, string>>({});
   const [listening, setListening] = useState(false);
 
+  // Reset local state when dialog opens
   useEffect(() => {
     if (open && settings) {
       setHotkey(settings.hotkey);
@@ -43,6 +71,7 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
       setWallpaperPath(settings.wallpaperPath);
       setTheme(settings.theme ?? 'dark');
       setWallpaperFit(settings.wallpaperFit ?? 'cover');
+      setAutoPaste(settings.autoPaste ?? false);
       setEnabledGroups(settings.enabledGroups ?? ALL_GROUPS);
       setGroupLabels(settings.groupLabels ?? {});
       setListening(false);
@@ -71,7 +100,10 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
 
   const handleSelectWallpaper = async () => {
     const result = await window.electronAPI.dialog.selectWallpaper();
-    if (result) setWallpaperPath(result);
+    if (result) {
+      setWallpaperPath(result);
+      previewWallpaper(result); // Immediate preview
+    }
   };
 
   const handlePickPosition = async () => {
@@ -96,25 +128,31 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
     setGroupLabels(prev => ({ ...prev, [g]: label }));
   }, []);
 
-  const handleSave = () => {
-    // Clean up empty labels
+  const collectUpdates = useCallback((): Partial<AppSettings> => {
     const cleanLabels: Record<string, string> = {};
     for (const [k, v] of Object.entries(groupLabels)) {
       if (v.trim()) cleanLabels[k] = v.trim();
     }
-    onSave({
+    return {
       hotkey, language: lang, maxHistory: maxHist,
       popupPosition: popupPos as any, popupX, popupY,
       accentColor, bgColor, wallpaperPath,
       theme, wallpaperFit,
+      autoPaste,
       enabledGroups, groupLabels: cleanLabels,
-    });
+    };
+  }, [hotkey, lang, maxHist, popupPos, popupX, popupY, accentColor, bgColor, wallpaperPath, theme, wallpaperFit, autoPaste, enabledGroups, groupLabels]);
+
+  const handleSave = useCallback(() => {
+    onSave(collectUpdates());
     onClose();
-  };
+  }, [collectUpdates, onSave, onClose]);
+
+  const handleApply = useCallback(() => {
+    onApply(collectUpdates());
+  }, [collectUpdates, onApply]);
 
   if (!open) return null;
-
-  const themeModeLabel = theme === 'dark' ? t('settings.theme.dark') : t('settings.theme.light');
 
   return (
     <div className="settings-overlay" onClick={onClose}>
@@ -184,13 +222,13 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
           <div className="theme-toggle">
             <button
               className={`theme-btn${theme === 'dark' ? ' active' : ''}`}
-              onClick={() => { setTheme('dark'); setAccentColor('#89b4fa'); setBgColor('#1e1e2e'); }}
+              onClick={() => { setTheme('dark'); setAccentColor('#89b4fa'); setBgColor('#1e1e2e'); previewTheme('dark'); previewAccent('#89b4fa'); previewBg('#1e1e2e'); }}
             >
               🌙 {t('settings.theme.dark')}
             </button>
             <button
               className={`theme-btn${theme === 'light' ? ' active' : ''}`}
-              onClick={() => { setTheme('light'); setAccentColor('#4375e0'); setBgColor('#f5f5f0'); }}
+              onClick={() => { setTheme('light'); setAccentColor('#4375e0'); setBgColor('#f5f5f0'); previewTheme('light'); previewAccent('#4375e0'); previewBg('#f5f5f0'); }}
             >
               ☀️ {t('settings.theme.light')}
             </button>
@@ -202,15 +240,15 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
           <div className="settings-field half">
             <label>{t('settings.accent_color')}</label>
             <div className="color-picker-row">
-              <input type="color" value={accentColor} onChange={e => setAccentColor(e.target.value)} />
-              <input type="text" value={accentColor} onChange={e => setAccentColor(e.target.value)} />
+              <input type="color" value={accentColor} onChange={e => { setAccentColor(e.target.value); previewAccent(e.target.value); }} />
+              <input type="text" value={accentColor} onChange={e => { setAccentColor(e.target.value); previewAccent(e.target.value); }} />
             </div>
           </div>
           <div className="settings-field half">
             <label>{t('settings.bg_color')}</label>
             <div className="color-picker-row">
-              <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} />
-              <input type="text" value={bgColor} onChange={e => setBgColor(e.target.value)} />
+              <input type="color" value={bgColor} onChange={e => { setBgColor(e.target.value); previewBg(e.target.value); }} />
+              <input type="text" value={bgColor} onChange={e => { setBgColor(e.target.value); previewBg(e.target.value); }} />
             </div>
           </div>
         </div>
@@ -223,7 +261,7 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
               {t('settings.select_wallpaper')}
             </button>
             {wallpaperPath && (
-              <button className="btn-secondary btn-small btn-danger" onClick={() => setWallpaperPath('')}>
+              <button className="btn-secondary btn-small btn-danger" onClick={() => { setWallpaperPath(''); previewWallpaper(''); }}>
                 {t('settings.remove_wallpaper')}
               </button>
             )}
@@ -235,13 +273,27 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
         {wallpaperPath && (
           <div className="settings-field">
             <label>{t('settings.wallpaper_fit')}</label>
-            <select value={wallpaperFit} onChange={e => setWallpaperFit(e.target.value as WallpaperFit)}>
+            <select value={wallpaperFit} onChange={e => { const v = e.target.value as WallpaperFit; setWallpaperFit(v); previewWallpaperFit(v); }}>
               <option value="cover">{t('settings.fit.cover')}</option>
               <option value="contain">{t('settings.fit.contain')}</option>
               <option value="fill">{t('settings.fit.fill')}</option>
             </select>
           </div>
         )}
+
+        {/* Auto Paste */}
+        <div className="settings-section">{t('settings.auto_paste')}</div>
+        <div className="settings-field">
+          <label className="toggle-row">
+            <input
+              type="checkbox"
+              checked={autoPaste}
+              onChange={e => setAutoPaste(e.target.checked)}
+            />
+            <span>{t('settings.auto_paste')}</span>
+          </label>
+          <span className="field-hint">{t('settings.auto_paste_hint')}</span>
+        </div>
 
         {/* Sidebar Groups */}
         <div className="settings-section">{t('settings.sidebar')}</div>
@@ -273,6 +325,7 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
         {/* Actions */}
         <div className="settings-actions">
           <button className="btn-primary" onClick={handleSave}>{t('settings.save')}</button>
+          <button className="btn-secondary" onClick={handleApply}>{t('settings.apply')}</button>
           <button className="btn-secondary" onClick={onClose}>{t('settings.cancel')}</button>
         </div>
       </div>

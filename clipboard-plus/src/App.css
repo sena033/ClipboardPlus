@@ -121,11 +121,11 @@ body {
 .search-clear:hover { color: var(--text-primary); background: var(--bg-hover); }
 
 /* ── Main Layout ── */
-.main-content { display: flex; flex: 1; min-height: 0; }
+.main-content { display: flex; flex: 1; min-height: 0; gap: 4px; }
 
 /* ── Sidebar ── */
 .sidebar {
-  width: 150px; flex-shrink: 0; background: var(--bg-secondary);
+  width: 160px; flex-shrink: 0; background: var(--bg-secondary);
   border-right: 1px solid var(--border); padding: 4px 0; overflow-y: auto;
   transition: background 0.2s, border-color 0.2s;
 }
@@ -150,11 +150,13 @@ body {
 .entry-list::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
 
 .entry-item {
-  display: flex; align-items: flex-start; gap: 8px;
-  padding: 7px 10px; margin: 1px 0; border-radius: var(--radius);
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 12px; margin: 2px 0; border-radius: var(--radius);
   cursor: pointer; transition: background 0.1s;
   border: 1px solid transparent; position: relative;
 }
+.entry-item .entry-preview { line-height: 1.5; font-size: 13px; }
+.entry-item .entry-meta { margin-top: 3px; gap: 8px; }
 .entry-item:hover { background: var(--bg-hover); }
 .entry-item.selected { background: var(--bg-surface); border-color: var(--accent); }
 .entry-icon {
@@ -206,8 +208,8 @@ body {
 
 /* ── Detail ── */
 .detail-panel {
-  flex-shrink: 0; max-height: 140px; border-top: 1px solid var(--border);
-  background: var(--bg-secondary); padding: 8px 14px;
+  flex-shrink: 0; max-height: 160px; border-top: 1px solid var(--border);
+  background: var(--bg-secondary); padding: 10px 14px;
   overflow: hidden; display: flex; flex-direction: column;
   transition: background 0.2s, border-color 0.2s;
 }
@@ -395,3 +397,15 @@ body {
   border: 1px solid var(--border);
   color: var(--text-muted) !important;
 }
+
+/* ── Toggle Row (Auto Paste) ── */
+.toggle-row {
+  display: flex !important; align-items: center; gap: 8px;
+  cursor: pointer; font-size: 13px !important; color: var(--text-primary) !important;
+}
+.toggle-row input[type="checkbox"] {
+  accent-color: var(--accent); cursor: pointer; width: 16px; height: 16px;
+}
+
+/* ── Entry spacing ── */
+.entry-list { padding: 6px; gap: 2px; }
