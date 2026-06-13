@@ -17,6 +17,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
     quit: () => ipcRenderer.send('app:quit'),
   },
+  dialog: {
+    selectWallpaper: () => ipcRenderer.invoke('dialog:selectWallpaper'),
+  },
   on: (channel, callback) => {
     ipcRenderer.on(channel, (_event, ...args) => callback(...args));
   },

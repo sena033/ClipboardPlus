@@ -9,11 +9,18 @@ export interface ClipboardEntry {
 }
 
 export type GroupKey = 'all' | 'favorites' | 'today' | 'yesterday' | 'week' | 'month' | 'older';
+export type PopupPosition = 'cursor' | 'center' | 'custom';
 
 export interface AppSettings {
   hotkey: string;
   language: 'zh' | 'en';
   maxHistory: number;
+  popupPosition: PopupPosition;
+  popupX: number;
+  popupY: number;
+  accentColor: string;
+  bgColor: string;
+  wallpaperPath: string;
 }
 
 export interface ElectronAPI {
@@ -23,6 +30,7 @@ export interface ElectronAPI {
     deleteEntry: (id: string) => Promise<void>;
     toggleFavorite: (id: string) => Promise<void>;
     copyToClipboard: (content: string) => Promise<void>;
+    pasteEntry: (content: string) => Promise<void>;
   };
   settings: {
     get: () => Promise<AppSettings>;
@@ -31,6 +39,9 @@ export interface ElectronAPI {
   app: {
     getVersion: () => Promise<string>;
     quit: () => void;
+  };
+  dialog: {
+    selectWallpaper: () => Promise<string | null>;
   };
   on: (channel: string, callback: (...args: any[]) => void) => void;
   removeListener: (channel: string, callback: (...args: any[]) => void) => void;

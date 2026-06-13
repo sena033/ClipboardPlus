@@ -64,34 +64,6 @@ jobs:
           name: secondbrain-windows
           path: dist/*
 
-  build-electron:
-    runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: secondbrain-electron
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: secondbrain-electron/package-lock.json
-      - name: Install dependencies
-        run: npm install
-      - name: Build React app
-        run: npx vite build
-      - name: Package Electron app
-        run: npx electron-builder --win --config --publish=never
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload Electron Windows installer
-        uses: actions/upload-artifact@v4
-        with:
-          name: secondbrain-electron-windows
-          path: secondbrain-electron/release/*.exe
-
   build-clipboard-plus:
     runs-on: windows-latest
     defaults:

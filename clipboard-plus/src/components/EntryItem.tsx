@@ -13,13 +13,11 @@ interface Props {
 }
 
 function formatTime(ts: number): string {
-  const d = new Date(ts);
-  const now = new Date();
-  const diff = now.getTime() - d.getTime();
-  if (diff < 60000) return 'just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return d.toLocaleDateString();
+  const diff = Date.now() - ts;
+  if (diff < 60000) return t('time.just_now');
+  if (diff < 3600000) return t('time.minutes_ago', { n: Math.floor(diff / 60000) });
+  if (diff < 86400000) return t('time.hours_ago', { n: Math.floor(diff / 3600000) });
+  return t('time.days_ago', { n: Math.floor(diff / 86400000) });
 }
 
 function entryIcon(type: string): string {
@@ -53,9 +51,7 @@ export default function EntryItem({ entry, isSelected, onSelect, onCopy, onPaste
     setCtxOpen(true);
   }, []);
 
-  const handleDoubleClick = useCallback(() => {
-    onPaste();
-  }, [onPaste]);
+  const handleDoubleClick = useCallback(() => { onPaste(); }, [onPaste]);
 
   return (
     <div
@@ -82,11 +78,7 @@ export default function EntryItem({ entry, isSelected, onSelect, onCopy, onPaste
       </button>
 
       {ctxOpen && (
-        <div
-          className="context-menu"
-          style={{ left: ctxPos.x, top: ctxPos.y }}
-          onClick={e => e.stopPropagation()}
-        >
+        <div className="context-menu" style={{ left: ctxPos.x, top: ctxPos.y }} onClick={e => e.stopPropagation()}>
           <div className="ctx-item" onClick={() => { onCopy(); setCtxOpen(false); }}>{t('context.copy')}</div>
           <div className="ctx-item" onClick={() => { onPaste(); setCtxOpen(false); }}>{t('context.paste')}</div>
           <div className="ctx-divider" />

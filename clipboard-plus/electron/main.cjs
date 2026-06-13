@@ -1,6 +1,6 @@
 const {
   app, BrowserWindow, globalShortcut, Tray, Menu,
-  clipboard: elClipboard, nativeImage, ipcMain,
+  clipboard: elClipboard, nativeImage, ipcMain, screen, dialog,
 } = require('electron');
 const path = require('path');
 const fs = require('fs');
@@ -13,11 +13,16 @@ let lastClipboardContent = '';
 const HISTORY_FILE = path.join(app.getPath('userData'), 'clipboard-history.json');
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
 
-// ── Default Settings ──
 const DEFAULT_SETTINGS = {
-  hotkey: 'Super+V',
+  hotkey: 'Alt+V',
   language: 'zh',
   maxHistory: 100,
+  popupPosition: 'cursor',
+  popupX: 200,
+  popupY: 100,
+  accentColor: '#89b4fa',
+  bgColor: '#1e1e2e',
+  wallpaperPath: '',
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -50,9 +55,8 @@ function loadHistory() {
 }
 
 function saveHistory() {
-  try {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history), 'utf-8');
-  } catch (e) { /* ignore */ }
+  try { fs.writeFileSync(HISTORY_FILE, JSON.stringify(history), 'utf-8'); }
+  catch (e) { /* ignore */ }
 }
 
 function pruneHistory() {
@@ -66,7 +70,6 @@ function addEntry(type, content) {
   if (!content || (type === 'text' && content === lastClipboardContent)) return;
   if (type === 'text') lastClipboardContent = content;
 
-  // Deduplicate: if same text already exists, move it to top instead of adding duplicate
   const existing = history.findIndex(e => e.type === type && e.content === content);
   if (existing >= 0) {
     const entry = history.splice(existing, 1)[0];
@@ -78,14 +81,12 @@ function addEntry(type, content) {
     return;
   }
 
-  const entry = {
+  history.unshift({
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    type,
-    content,
+    type, content,
     timestamp: Date.now(),
     favorite: false,
-  };
-  history.unshift(entry);
+  });
   pruneHistory();
   saveHistory();
   notifyUpdate();
@@ -97,9 +98,8 @@ function notifyUpdate() {
   }
 }
 
-// ── Clipboard Polling (two-way: detect external copies) ──
+// ── Clipboard Polling ──
 function startClipboardPolling() {
-  // Seed with current clipboard on startup
   try {
     const initialText = elClipboard.readText();
     if (initialText) lastClipboardContent = initialText;
@@ -108,9 +108,7 @@ function startClipboardPolling() {
   setInterval(() => {
     try {
       const text = elClipboard.readText();
-      if (text && text !== lastClipboardContent) {
-        addEntry('text', text);
-      }
+      if (text && text !== lastClipboardContent) addEntry('text', text);
     } catch (_) { /* ignore */ }
   }, 500);
 }
@@ -118,79 +116,91 @@ function startClipboardPolling() {
 // ── Hotkey ──
 function registerHotkey(hotkey) {
   globalShortcut.unregisterAll();
-
   const key = hotkey || DEFAULT_SETTINGS.hotkey;
-  const handler = () => {
-    if (mainWindow && mainWindow.isVisible()) {
-      mainWindow.hide();
-    } else {
-      showWindow();
-    }
-  };
+  const handler = () => toggleWindow();
 
   try {
     const ok = globalShortcut.register(key, handler);
     if (!ok) {
-      console.warn(`[clipboard-plus] Hotkey "${key}" registration failed, trying Alt+V`);
-      globalShortcut.register('Alt+V', handler);
+      console.warn(`[clipboard-plus] Hotkey "${key}" failed`);
     }
   } catch (e) {
     console.error(`[clipboard-plus] Hotkey error:`, e);
-    try { globalShortcut.register('Alt+V', handler); } catch (_) {}
   }
 }
 
-function reregisterHotkey() {
-  registerHotkey(settings.hotkey);
+function reregisterHotkey() { registerHotkey(settings.hotkey); }
+
+// ── Window Position ──
+function calcWindowPos() {
+  const winsize = mainWindow.getSize();
+  const winw = winsize[0], winh = winsize[1];
+  const displays = screen.getAllDisplays();
+  const primary = screen.getPrimaryDisplay();
+  const workArea = primary.workArea;
+
+  switch (settings.popupPosition) {
+    case 'cursor': {
+      const cursor = screen.getCursorScreenPoint();
+      let x = cursor.x - Math.round(winw / 2);
+      let y = cursor.y - 20;
+      // Clamp to work area
+      x = Math.max(workArea.x, Math.min(x, workArea.x + workArea.width - winw));
+      y = Math.max(workArea.y, Math.min(y, workArea.y + workArea.height - winh));
+      return { x, y };
+    }
+    case 'custom':
+      return { x: settings.popupX, y: settings.popupY };
+    case 'center':
+    default:
+      return {
+        x: workArea.x + Math.round((workArea.width - winw) / 2),
+        y: workArea.y + Math.round((workArea.height - winh) / 2),
+      };
+  }
 }
 
 // ── Tray ──
 function createTray() {
   const size = 16;
   const canvas = Buffer.alloc(size * size * 4);
-  for (let y = 0; y < size; y++) {
+  for (let y = 0; y < size; y++)
     for (let x = 0; x < size; x++) {
       const idx = (y * size + x) * 4;
       if (x >= 2 && x <= 13 && y >= 2 && y <= 13) {
         if (x === 2 || x === 13 || y === 2 || y === 13) {
-          canvas[idx] = 137; canvas[idx + 1] = 180; canvas[idx + 2] = 250; canvas[idx + 3] = 255;
+          canvas[idx] = 137; canvas[idx+1] = 180; canvas[idx+2] = 250; canvas[idx+3] = 255;
         } else {
-          canvas[idx] = 30; canvas[idx + 1] = 30; canvas[idx + 2] = 46; canvas[idx + 3] = 0;
+          canvas[idx] = 30; canvas[idx+1] = 30; canvas[idx+2] = 46; canvas[idx+3] = 0;
         }
       } else {
-        canvas[idx] = 0; canvas[idx + 1] = 0; canvas[idx + 2] = 0; canvas[idx + 3] = 0;
+        canvas[idx] = 0; canvas[idx+1] = 0; canvas[idx+2] = 0; canvas[idx+3] = 0;
       }
     }
-  }
   const icon = nativeImage.createFromBuffer(canvas, { width: size, height: size });
-
   tray = new Tray(icon);
   tray.setToolTip(settings.language === 'zh' ? '剪贴板增强' : 'Clipboard Plus');
-
   buildTrayMenu();
-  tray.on('click', () => showWindow());
+  tray.on('click', () => toggleWindow());
 }
 
 function buildTrayMenu() {
   const isZh = settings.language === 'zh';
-  const contextMenu = Menu.buildFromTemplate([
-    { label: isZh ? '显示剪贴板' : 'Show Clipboard', click: () => showWindow() },
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: isZh ? '显示剪贴板' : 'Show Clipboard', click: () => toggleWindow() },
     { type: 'separator' },
-    { label: isZh ? '设置' : 'Settings', click: () => { mainWindow?.webContents.send('open-settings'); showWindow(); } },
+    { label: isZh ? '设置' : 'Settings', click: () => { mainWindow?.webContents.send('open-settings'); toggleWindow(); } },
     { type: 'separator' },
     { label: isZh ? '退出' : 'Quit', click: () => { app.isQuitting = true; app.quit(); } },
-  ]);
-  tray.setContextMenu(contextMenu);
+  ]));
 }
 
 // ── Window ──
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 680,
-    height: 500,
-    resizable: true,
-    frame: true,
-    backgroundColor: '#1e1e2e',
+    width: 680, height: 500,
+    resizable: true, frame: true,
+    backgroundColor: settings.bgColor,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -200,37 +210,33 @@ function createWindow() {
   });
 
   mainWindow.on('close', (e) => {
-    if (!app.isQuitting) {
-      e.preventDefault();
-      mainWindow.hide();
-    }
+    if (!app.isQuitting) { e.preventDefault(); mainWindow.hide(); }
   });
 
   const isDev = process.env.VITE_DEV_SERVER_URL;
-  if (isDev) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
-  }
+  if (isDev) mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
+  else mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
 }
 
-function showWindow() {
-  if (mainWindow) {
-    mainWindow.show();
-    mainWindow.focus();
-    mainWindow.webContents.send('clipboard-update', history);
+function toggleWindow() {
+  if (!mainWindow) return;
+  if (mainWindow.isVisible()) {
+    mainWindow.hide();
+    return;
   }
+  // Set position before showing
+  const pos = calcWindowPos();
+  mainWindow.setPosition(pos.x, pos.y);
+  mainWindow.show();
+  mainWindow.focus();
+  mainWindow.webContents.send('clipboard-update', history);
 }
 
-// ── Simulate Ctrl+V paste ──
+// ── Paste ──
 function pasteContent(content) {
-  // Write to clipboard then send paste keystroke to focused window
   elClipboard.writeText(content);
-  const { BrowserWindow: BW } = require('electron');
-  const focused = BW.getFocusedWindow();
-  if (focused && focused !== mainWindow) {
-    focused.webContents.paste();
-  }
+  const focused = BrowserWindow.getFocusedWindow();
+  if (focused && focused !== mainWindow) focused.webContents.paste();
 }
 
 // ── IPC ──
@@ -238,30 +244,17 @@ function setupIPC() {
   // Clipboard
   ipcMain.handle('clipboard:getHistory', () => history);
   ipcMain.handle('clipboard:clearHistory', () => {
-    history = [];
-    lastClipboardContent = '';
-    saveHistory();
-    notifyUpdate();
+    history = []; lastClipboardContent = ''; saveHistory(); notifyUpdate();
   });
   ipcMain.handle('clipboard:deleteEntry', (_, id) => {
-    history = history.filter(e => e.id !== id);
-    saveHistory();
-    notifyUpdate();
+    history = history.filter(e => e.id !== id); saveHistory(); notifyUpdate();
   });
   ipcMain.handle('clipboard:toggleFavorite', (_, id) => {
     const entry = history.find(e => e.id === id);
-    if (entry) {
-      entry.favorite = !entry.favorite;
-      saveHistory();
-      notifyUpdate();
-    }
+    if (entry) { entry.favorite = !entry.favorite; saveHistory(); notifyUpdate(); }
   });
-  ipcMain.handle('clipboard:copyToClipboard', (_, content) => {
-    elClipboard.writeText(content);
-  });
-  ipcMain.handle('clipboard:pasteEntry', (_, content) => {
-    pasteContent(content);
-  });
+  ipcMain.handle('clipboard:copyToClipboard', (_, content) => elClipboard.writeText(content));
+  ipcMain.handle('clipboard:pasteEntry', (_, content) => pasteContent(content));
 
   // Settings
   ipcMain.handle('settings:get', () => ({ ...settings }));
@@ -273,7 +266,26 @@ function setupIPC() {
       tray.setToolTip(settings.language === 'zh' ? '剪贴板增强' : 'Clipboard Plus');
       buildTrayMenu();
     }
-    notifyUpdate();
+    if (updates.bgColor && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.setBackgroundColor(settings.bgColor);
+    }
+  });
+
+  // Dialog
+  ipcMain.handle('dialog:selectWallpaper', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: settings.language === 'zh' ? '选择壁纸图片' : 'Select Wallpaper Image',
+      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'bmp', 'gif', 'webp'] }],
+      properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    const filePath = result.filePaths[0];
+    // Copy to app userData folder for persistence
+    const dest = path.join(app.getPath('userData'), 'wallpaper' + path.extname(filePath));
+    try {
+      fs.copyFileSync(filePath, dest);
+      return dest;
+    } catch (_) { return filePath; }
   });
 
   // App
@@ -290,16 +302,8 @@ app.whenReady().then(() => {
   setupIPC();
   startClipboardPolling();
   reregisterHotkey();
-
-  app.on('activate', () => {
-    if (mainWindow) showWindow();
-  });
+  app.on('activate', () => toggleWindow());
 });
 
-app.on('will-quit', () => {
-  globalShortcut.unregisterAll();
-});
-
-app.on('window-all-closed', () => {
-  // Don't quit — keep tray running
-});
+app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('window-all-closed', () => { /* keep tray */ });
