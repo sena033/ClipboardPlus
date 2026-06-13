@@ -8,6 +8,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
+          # Avoid recursive submodule update at checkout. Some runners
+          # fail early when .gitmodules/submodule metadata is inconsistent
+          # ("No url found for submodule path ..."). The workflow builds
+          # raylib explicitly below by cloning it, so disable submodule
+          # auto-update here to prevent early failures.
+          submodules: false
           fetch-depth: 0
       - name: Setup MSYS2 and build tools
         uses: msys2/setup-msys2@v2
@@ -31,9 +37,16 @@ jobs:
       - name: CMake configure
         shell: bash
         run: |
-          set -e
-          mkdir -p build && cd build
-          cmake .. -DCMAKE_PREFIX_PATH=/tmp/raylib-install
+      set -e
+      mkdir -p build && cd build
+      # Force MinGW Makefiles generator so mingw32-make finds a Makefile
+      # (without -G CMake may choose Visual Studio generator on hosted
+      # Windows runners which produces no Makefile for mingw32-make).
+      # Ensure CMake can find raylib's installed config files and build type
+      cmake -G "MinGW Makefiles" .. \
+        -DCMAKE_PREFIX_PATH=/tmp/raylib-install \
+        -Draylib_DIR=/tmp/raylib-install/lib/cmake/raylib \
+        -DCMAKE_BUILD_TYPE=Release
       - name: Build
         shell: bash
         run: |
