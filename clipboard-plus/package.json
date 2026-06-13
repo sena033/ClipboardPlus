@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Clipboard history manager with system tray, global hotkey, and search",
   "author": "SecondBrain",
+  "repository": "https://github.com/sena033/gi-thub-workspace",
   "license": "MIT",
   "type": "module",
   "main": "electron/main.cjs",
