@@ -31,7 +31,7 @@ jobs:
           set -e
           git clone --depth 1 https://github.com/raysan5/raylib.git /tmp/raylib
           mkdir -p /tmp/raylib/build && cd /tmp/raylib/build
-          cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=/tmp/raylib-install ..
+          cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/tmp/raylib-install ..
           mingw32-make -j$(nproc)
           mingw32-make install
       - name: CMake configure
@@ -52,11 +52,17 @@ jobs:
         run: |
           cd build
           mingw32-make -j$(nproc)
+      - name: Package binary with dependencies
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp build/secondbrain.exe dist/
+          cp /tmp/raylib-install/bin/libraylib.dll dist/
       - name: Upload Windows binary
         uses: actions/upload-artifact@v4
         with:
           name: secondbrain-windows
-          path: build/secondbrain.exe
+          path: dist/*
 
   # Android build removed temporarily: building raylib+NDK in CI requires
   # additional runner setup (X11 deps, submodules or a prebuilt raylib for
