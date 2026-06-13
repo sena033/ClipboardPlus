@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AppSettings, ThemeMode, WallpaperFit, GroupKey } from '../types';
 import { ALL_GROUPS } from '../types';
 import { t } from '../i18n';
@@ -56,6 +56,7 @@ export default function SettingsDialog({ open, settings, onSave, onApply, onClos
   const [enabledGroups, setEnabledGroups] = useState<GroupKey[]>(ALL_GROUPS);
   const [groupLabels, setGroupLabels] = useState<Record<string, string>>({});
   const [listening, setListening] = useState(false);
+  const groupInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // Reset local state when dialog opens
   useEffect(() => {
@@ -124,14 +125,11 @@ export default function SettingsDialog({ open, settings, onSave, onApply, onClos
     });
   }, []);
 
-  const updateGroupLabel = useCallback((g: GroupKey, label: string) => {
-    setGroupLabels(prev => ({ ...prev, [g]: label }));
-  }, []);
-
   const collectUpdates = useCallback((): Partial<AppSettings> => {
     const cleanLabels: Record<string, string> = {};
-    for (const [k, v] of Object.entries(groupLabels)) {
-      if (v.trim()) cleanLabels[k] = v.trim();
+    for (const g of ALL_GROUPS) {
+      const el = groupInputRefs.current[g];
+      if (el && el.value.trim()) cleanLabels[g] = el.value.trim();
     }
     return {
       hotkey, language: lang, maxHistory: maxHist,
@@ -141,7 +139,7 @@ export default function SettingsDialog({ open, settings, onSave, onApply, onClos
       autoPaste,
       enabledGroups, groupLabels: cleanLabels,
     };
-  }, [hotkey, lang, maxHist, popupPos, popupX, popupY, accentColor, bgColor, wallpaperPath, theme, wallpaperFit, autoPaste, enabledGroups, groupLabels]);
+  }, [hotkey, lang, maxHist, popupPos, popupX, popupY, accentColor, bgColor, wallpaperPath, theme, wallpaperFit, autoPaste, enabledGroups]);
 
   const handleSave = useCallback(() => {
     onSave(collectUpdates());
@@ -299,7 +297,6 @@ export default function SettingsDialog({ open, settings, onSave, onApply, onClos
         <div className="settings-section">{t('settings.sidebar')}</div>
         {ALL_GROUPS.map(g => {
           const defaultLabel = t(`group.${g}`);
-          const currentLabel = groupLabels[g] || '';
           return (
             <div key={g} className="settings-field group-setting-row">
               <label className="group-setting-label">
@@ -315,8 +312,8 @@ export default function SettingsDialog({ open, settings, onSave, onApply, onClos
                 className="group-rename-input"
                 type="text"
                 placeholder={defaultLabel}
-                value={currentLabel}
-                onChange={e => updateGroupLabel(g, e.target.value)}
+                defaultValue={groupLabels[g] || ''}
+                ref={el => { groupInputRefs.current[g] = el; }}
               />
             </div>
           );
