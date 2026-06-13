@@ -51,23 +51,7 @@ jobs:
         shell: bash
         run: |
           cd build
-          set -o pipefail
-          mingw32-make VERBOSE=1 2>&1 | tee ../build-output.log
-      - name: Show build errors in job summary
-        if: failure()
-        shell: bash
-        run: |
-          echo "## Build Error Output (last 50 lines)" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          tail -50 build-output.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-      - name: Upload build logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-failure-logs
-          path: build-output.log
-          retention-days: 7
+          mingw32-make -j$(nproc)
       - name: Upload Windows binary
         uses: actions/upload-artifact@v4
         with:
