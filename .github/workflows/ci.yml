@@ -92,6 +92,34 @@ jobs:
           name: secondbrain-electron-windows
           path: secondbrain-electron/release/*.exe
 
+  build-clipboard-plus:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: clipboard-plus
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: clipboard-plus/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Build React app
+        run: npx vite build
+      - name: Package Electron app
+        run: npx electron-builder --win --config --publish=never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: clipboard-plus-windows
+          path: clipboard-plus/release/*.exe
+
   # Android build removed temporarily: building raylib+NDK in CI requires
   # additional runner setup (X11 deps, submodules or a prebuilt raylib for
   # Android). Restore this job once the project provides an Android toolchain
