@@ -75,11 +75,11 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: secondbrain-electron/package-lock.json
       - name: Install dependencies
-        run: npm ci
+        run: npm install
       - name: Build React app
         run: npx vite build
       - name: Package Electron app
