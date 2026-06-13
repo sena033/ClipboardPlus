@@ -2,7 +2,7 @@
 
 > Windows 剪贴板历史管理器
 
-**中文 (当前)** | [English](README.md)
+[English](README.md) | **中文 (当前)**
 
 剪贴板增强（Clipboard Plus）是一个基于 Electron 的 Windows 剪贴板历史管理工具，仿 Ditto 风格界面，支持中英文。
 

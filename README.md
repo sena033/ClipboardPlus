@@ -2,7 +2,7 @@
 
 > Windows clipboard history manager
 
-**[中文](README.zh.md)** | **English (current)**
+**English (current)** | [中文](README.zh.md)
 
 Clipboard Plus is an Electron-based Windows clipboard history manager with a Ditto-style UI, supporting both Chinese and English.
 
