@@ -19,7 +19,7 @@
 | 🖥️ 系统托盘 | 后台常驻，点击托盘图标或按快捷键呼出 |
 
 ### 下载
-从 [GitHub Actions](https://github.com/sena033/gi-thub-workspace/actions) 下载最新 `clipboard-plus-windows` 构建产物，运行安装程序即可。
+从 [GitHub Releases](https://github.com/sena033/ClipboardPlus/releases) 下载最新 `clipboard-plus-windows` 构建产物，运行安装程序即可。
 
 ### 开发
 ```bash
@@ -48,7 +48,7 @@ Clipboard Plus is an Electron-based Windows clipboard history manager with a Dit
 | 🖥️ System Tray | Runs in background, tray icon + hotkey |
 
 ### Download
-Get the latest `clipboard-plus-windows` build artifact from [GitHub Actions](https://github.com/sena033/gi-thub-workspace/actions).
+Get the latest `clipboard-plus-windows` build artifact from [GitHub Releases](https://github.com/sena033/ClipboardPlus/releases).
 
 ### Development
 ```bash
