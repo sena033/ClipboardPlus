@@ -83,7 +83,7 @@ jobs:
       - name: Build React app
         run: npx vite build
       - name: Package Electron app
-        run: npx electron-builder --win --config
+        run: npx electron-builder --win --config --publish=never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Upload Electron Windows installer
