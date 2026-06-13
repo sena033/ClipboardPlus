@@ -105,6 +105,7 @@ const zh: Record<string, string> = {
 
   // Notifications
   'notify.cleared': '已清空{group}记录',
+  'notify.cleared_skipped': '已清空{group}记录（跳过{n}条收藏）',
   'notify.deleted': '已删除',
   'notify.favorited': '已收藏',
   'notify.unfavorited': '已取消收藏',

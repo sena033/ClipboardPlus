@@ -124,14 +124,18 @@ export default function App() {
     showToast(entry?.archived ? t('notify.unarchived') : t('notify.archived'));
   }, [history, toggleArchive, showToast]);
 
-  // Context-aware clear: only clear entries in the current group
+  // Context-aware clear: only clear entries in the current group, preserve favorites
   const handleClearGroup = useCallback(async () => {
-    const toDelete = grouped.map(e => e.id);
+    const toDelete = grouped.filter(e => !e.favorite).map(e => e.id);
     if (toDelete.length === 0) return;
     await deleteEntries(toDelete);
     setSelectedId(null);
     const groupLabel = settings?.groupLabels?.[selectedGroup] || t(`group.${selectedGroup}`);
-    showToast(t('notify.cleared', { group: groupLabel }));
+    const skipped = grouped.length - toDelete.length;
+    const msg = skipped > 0
+      ? t('notify.cleared_skipped', { group: groupLabel, n: skipped })
+      : t('notify.cleared', { group: groupLabel });
+    showToast(msg);
   }, [grouped, deleteEntries, selectedGroup, settings, showToast]);
 
   const handleSaveSettings = useCallback(async (s: Partial<AppSettings>) => {

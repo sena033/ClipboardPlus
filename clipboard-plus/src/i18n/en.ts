@@ -95,6 +95,7 @@ const en: Record<string, string> = {
   'context.settings': 'Settings',
 
   'notify.cleared': 'Cleared {group}',
+  'notify.cleared_skipped': 'Cleared {group} (skipped {n} favorites)',
   'notify.deleted': 'Deleted',
   'notify.favorited': 'Favorited',
   'notify.unfavorited': 'Unfavorited',
