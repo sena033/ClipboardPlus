@@ -23,6 +23,10 @@ const DEFAULT_SETTINGS = {
   accentColor: '#89b4fa',
   bgColor: '#1e1e2e',
   wallpaperPath: '',
+  theme: 'dark',
+  wallpaperFit: 'cover',
+  enabledGroups: ['all', 'favorites', 'today', 'yesterday', 'week', 'month', 'older', 'archived'],
+  groupLabels: {},
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -86,6 +90,7 @@ function addEntry(type, content) {
     type, content,
     timestamp: Date.now(),
     favorite: false,
+    archived: false,
   });
   pruneHistory();
   saveHistory();
@@ -184,6 +189,60 @@ function createTray() {
   tray.on('click', () => toggleWindow());
 }
 
+// ── Application Menu ──
+function createAppMenu() {
+  const isZh = settings.language === 'zh';
+  const template = [
+    {
+      label: isZh ? '文件' : 'File',
+      submenu: [
+        { label: isZh ? '设置' : 'Settings', accelerator: 'Ctrl+,', click: () => { mainWindow?.webContents.send('open-settings'); toggleWindow(); } },
+        { type: 'separator' },
+        { label: isZh ? '退出' : 'Quit', accelerator: 'Alt+F4', click: () => { app.isQuitting = true; app.quit(); } },
+      ],
+    },
+    {
+      label: isZh ? '编辑' : 'Edit',
+      submenu: [
+        { role: 'undo', label: isZh ? '撤销' : 'Undo' },
+        { role: 'redo', label: isZh ? '重做' : 'Redo' },
+        { type: 'separator' },
+        { role: 'cut', label: isZh ? '剪切' : 'Cut' },
+        { role: 'copy', label: isZh ? '复制' : 'Copy' },
+        { role: 'paste', label: isZh ? '粘贴' : 'Paste' },
+        { role: 'selectAll', label: isZh ? '全选' : 'Select All' },
+      ],
+    },
+    {
+      label: isZh ? '视图' : 'View',
+      submenu: [
+        { label: isZh ? '显示剪贴板' : 'Show Clipboard', accelerator: settings.hotkey, click: () => toggleWindow() },
+        { type: 'separator' },
+        { role: 'toggleDevTools', label: isZh ? '开发者工具' : 'Toggle DevTools' },
+        { role: 'reload', label: isZh ? '重新加载' : 'Reload' },
+      ],
+    },
+    {
+      label: isZh ? '帮助' : 'Help',
+      submenu: [
+        {
+          label: isZh ? '关于剪贴板增强' : 'About Clipboard Plus',
+          click: () => {
+            const v = app.getVersion();
+            dialog.showMessageBox(mainWindow, {
+              type: 'info',
+              title: isZh ? '关于' : 'About',
+              message: isZh ? `剪贴板增强 v${v}` : `Clipboard Plus v${v}`,
+              detail: isZh ? '基于 Electron 的 Windows 剪贴板历史管理器' : 'Electron-based Windows clipboard history manager',
+            });
+          },
+        },
+      ],
+    },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
 function buildTrayMenu() {
   const isZh = settings.language === 'zh';
   tray.setContextMenu(Menu.buildFromTemplate([
@@ -253,6 +312,10 @@ function setupIPC() {
     const entry = history.find(e => e.id === id);
     if (entry) { entry.favorite = !entry.favorite; saveHistory(); notifyUpdate(); }
   });
+  ipcMain.handle('clipboard:toggleArchive', (_, id) => {
+    const entry = history.find(e => e.id === id);
+    if (entry) { entry.archived = !entry.archived; saveHistory(); notifyUpdate(); }
+  });
   ipcMain.handle('clipboard:copyToClipboard', (_, content) => elClipboard.writeText(content));
   ipcMain.handle('clipboard:pasteEntry', (_, content) => pasteContent(content));
 
@@ -265,10 +328,18 @@ function setupIPC() {
     if (updates.language) {
       tray.setToolTip(settings.language === 'zh' ? '剪贴板增强' : 'Clipboard Plus');
       buildTrayMenu();
+      createAppMenu();
     }
     if (updates.bgColor && mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.setBackgroundColor(settings.bgColor);
     }
+  });
+
+  // Position picker — return current window position
+  ipcMain.handle('settings:pickPosition', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return { x: 200, y: 100 };
+    const [x, y] = mainWindow.getPosition();
+    return { x, y };
   });
 
   // Dialog
@@ -298,6 +369,7 @@ app.whenReady().then(() => {
   loadSettings();
   loadHistory();
   createWindow();
+  createAppMenu();
   createTray();
   setupIPC();
   startClipboardPolling();

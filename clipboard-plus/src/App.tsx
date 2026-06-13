@@ -28,22 +28,33 @@ function getGroup(ts: number): GroupKey {
 
 function groupCounts(entries: ClipboardEntry[]): Record<string, number> {
   const counts: Record<string, number> = {};
-  for (const e of entries) { const g = getGroup(e.timestamp); counts[g] = (counts[g] || 0) + 1; }
+  for (const e of entries) {
+    const g = getGroup(e.timestamp);
+    counts[g] = (counts[g] || 0) + 1;
+    if (e.favorite) counts['favorites'] = (counts['favorites'] || 0) + 1;
+    if (e.archived) counts['archived'] = (counts['archived'] || 0) + 1;
+  }
+  counts['all'] = entries.filter(e => !e.archived).length;
   return counts;
 }
 
 function filterByGroup(entries: ClipboardEntry[], group: GroupKey): ClipboardEntry[] {
+  // Archived entries only show in 'archived' group
+  const active = group !== 'archived' ? entries.filter(e => !e.archived) : entries;
   switch (group) {
-    case 'all': return entries;
-    case 'favorites': return entries.filter(e => e.favorite);
-    default: return entries.filter(e => getGroup(e.timestamp) === group);
+    case 'all': return active;
+    case 'favorites': return active.filter(e => e.favorite);
+    case 'archived': return active.filter(e => e.archived);
+    default: return active.filter(e => getGroup(e.timestamp) === group);
   }
 }
 
 function applyTheme(settings: AppSettings) {
   const root = document.documentElement;
+  root.setAttribute('data-theme', settings.theme || 'dark');
   root.style.setProperty('--accent', settings.accentColor);
   root.style.setProperty('--bg-primary', settings.bgColor);
+  root.style.setProperty('--wallpaper-fit', settings.wallpaperFit || 'cover');
   if (settings.wallpaperPath) {
     root.style.setProperty('--wallpaper', `url("file:///${settings.wallpaperPath.replace(/\\/g, '/')}")`);
   } else {
@@ -52,7 +63,7 @@ function applyTheme(settings: AppSettings) {
 }
 
 export default function App() {
-  const { history, deleteEntry, toggleFavorite, copyToClipboard, pasteEntry, clearHistory } = useHistory();
+  const { history, deleteEntry, toggleFavorite, toggleArchive, copyToClipboard, pasteEntry, clearHistory } = useHistory();
   const { settings, updateSettings } = useSettings();
 
   const [search, setSearch] = useState('');
@@ -94,6 +105,11 @@ export default function App() {
     await toggleFavorite(id);
     showToast(entry?.favorite ? t('notify.unfavorited') : t('notify.favorited'));
   }, [history, toggleFavorite, showToast]);
+  const handleToggleArchive = useCallback(async (id: string) => {
+    const entry = history.find(e => e.id === id);
+    await toggleArchive(id);
+    showToast(entry?.archived ? t('notify.unarchived') : t('notify.archived'));
+  }, [history, toggleArchive, showToast]);
   const handleClearAll = useCallback(async () => {
     await clearHistory(); setSelectedId(null); showToast(t('notify.cleared'));
   }, [clearHistory, showToast]);
@@ -104,6 +120,9 @@ export default function App() {
   const hotkeyDisplay = settings?.hotkey
     ?.replace('Super', 'Win').replace('CommandOrControl', 'Ctrl').replace('+', ' + ') ?? 'Alt+V';
 
+  const enabledGroups = settings?.enabledGroups ?? ['all', 'favorites', 'today', 'yesterday', 'week', 'month', 'older', 'archived'];
+  const groupLabels = settings?.groupLabels ?? {};
+
   return (
     <div className="app">
       <div className="toolbar">
@@ -113,12 +132,19 @@ export default function App() {
       </div>
 
       <div className="main-content">
-        <Sidebar selected={selectedGroup} counts={counts} onSelect={g => { setSelectedGroup(g); setSelectedId(null); }} />
+        <Sidebar
+          selected={selectedGroup}
+          counts={counts}
+          enabledGroups={enabledGroups}
+          groupLabels={groupLabels}
+          onSelect={g => { setSelectedGroup(g); setSelectedId(null); }}
+        />
         <div className="content-area">
           <EntryList
             entries={filtered} selectedId={selectedId} onSelect={handleSelect}
             onCopy={handleCopy} onPaste={handlePaste} onDelete={handleDelete}
             onToggleFavorite={handleToggleFavorite}
+            onToggleArchive={handleToggleArchive}
           />
         </div>
       </div>

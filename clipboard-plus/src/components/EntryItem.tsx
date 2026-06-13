@@ -10,6 +10,7 @@ interface Props {
   onPaste: () => void;
   onDelete: () => void;
   onToggleFavorite: () => void;
+  onToggleArchive: () => void;
 }
 
 function formatTime(ts: number): string {
@@ -20,7 +21,8 @@ function formatTime(ts: number): string {
   return t('time.days_ago', { n: Math.floor(diff / 86400000) });
 }
 
-function entryIcon(type: string): string {
+function entryIcon(type: string, archived: boolean): string {
+  if (archived) return '📦';
   switch (type) {
     case 'text': return 'T';
     case 'image': return '🖼';
@@ -32,7 +34,7 @@ function entryPreview(content: string): string {
   return content.replace(/\s+/g, ' ').slice(0, 80);
 }
 
-export default function EntryItem({ entry, isSelected, onSelect, onCopy, onPaste, onDelete, onToggleFavorite }: Props) {
+export default function EntryItem({ entry, isSelected, onSelect, onCopy, onPaste, onDelete, onToggleFavorite, onToggleArchive }: Props) {
   const [ctxOpen, setCtxOpen] = useState(false);
   const [ctxPos, setCtxPos] = useState({ x: 0, y: 0 });
   const ref = useRef<HTMLDivElement>(null);
@@ -56,17 +58,18 @@ export default function EntryItem({ entry, isSelected, onSelect, onCopy, onPaste
   return (
     <div
       ref={ref}
-      className={`entry-item${isSelected ? ' selected' : ''}`}
+      className={`entry-item${isSelected ? ' selected' : ''}${entry.archived ? ' archived' : ''}`}
       onClick={onSelect}
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
     >
-      <div className="entry-icon">{entryIcon(entry.type)}</div>
+      <div className="entry-icon">{entryIcon(entry.type, entry.archived)}</div>
       <div className="entry-body">
         <div className="entry-preview">{entryPreview(entry.content)}</div>
         <div className="entry-meta">
           <span className="entry-time">{formatTime(entry.timestamp)}</span>
           <span className="entry-type-badge">{t(`entry.type.${entry.type}`)}</span>
+          {entry.archived && <span className="entry-type-badge archived-badge">{t('group.archived')}</span>}
         </div>
       </div>
       <button
@@ -84,6 +87,9 @@ export default function EntryItem({ entry, isSelected, onSelect, onCopy, onPaste
           <div className="ctx-divider" />
           <div className="ctx-item" onClick={() => { onToggleFavorite(); setCtxOpen(false); }}>
             {entry.favorite ? t('context.unfavorite') : t('context.favorite')}
+          </div>
+          <div className="ctx-item" onClick={() => { onToggleArchive(); setCtxOpen(false); }}>
+            {entry.archived ? t('context.unarchive') : t('context.archive')}
           </div>
           <div className="ctx-divider" />
           <div className="ctx-item danger" onClick={() => { onDelete(); setCtxOpen(false); }}>{t('context.delete')}</div>

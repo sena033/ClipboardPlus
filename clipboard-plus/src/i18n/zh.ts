@@ -10,6 +10,7 @@ const zh: Record<string, string> = {
   'group.week': '本周',
   'group.month': '本月',
   'group.older': '更早',
+  'group.archived': '归档',
 
   // Entry
   'entry.type.text': '文本',
@@ -20,6 +21,8 @@ const zh: Record<string, string> = {
   'entry.delete': '删除',
   'entry.favorite': '收藏',
   'entry.unfavorite': '取消收藏',
+  'entry.archive': '归档',
+  'entry.unarchive': '取消归档',
   'entry.copied': '已复制到剪贴板',
   'entry.pasted': '已粘贴',
 
@@ -62,15 +65,27 @@ const zh: Record<string, string> = {
   'settings.popup_x': 'X 偏移',
   'settings.popup_y': 'Y 偏移',
   'settings.theme': '主题',
+  'settings.theme_mode': '主题模式',
+  'settings.theme.dark': '深色模式',
+  'settings.theme.light': '浅色模式',
   'settings.accent_color': '强调色',
   'settings.bg_color': '背景色',
   'settings.wallpaper': '壁纸',
   'settings.select_wallpaper': '选择图片...',
   'settings.remove_wallpaper': '移除壁纸',
+  'settings.wallpaper_fit': '壁纸填充方式',
+  'settings.fit.cover': '覆盖',
+  'settings.fit.contain': '包含',
+  'settings.fit.fill': '拉伸',
+  'settings.use_current_pos': '📌 获取当前位置',
+  'settings.position_hint': '拖动本窗口到期望位置，然后点击「获取当前位置」',
   'settings.save': '保存',
   'settings.cancel': '取消',
   'settings.saved': '设置已保存',
   'settings.hotkey_conflict': '快捷键注册失败，请尝试其他组合键',
+  'settings.sidebar': '侧边栏分组',
+  'settings.group_visible': '显示分组',
+  'settings.group_label': '自定义名称',
 
   // Context menu
   'context.copy': '复制',
@@ -78,6 +93,8 @@ const zh: Record<string, string> = {
   'context.delete': '删除',
   'context.favorite': '收藏',
   'context.unfavorite': '取消收藏',
+  'context.archive': '归档',
+  'context.unarchive': '取消归档',
   'context.clear_all': '清空全部',
   'context.settings': '设置',
 
@@ -86,6 +103,8 @@ const zh: Record<string, string> = {
   'notify.deleted': '已删除',
   'notify.favorited': '已收藏',
   'notify.unfavorited': '已取消收藏',
+  'notify.archived': '已归档',
+  'notify.unarchived': '已取消归档',
 };
 
 export default zh;

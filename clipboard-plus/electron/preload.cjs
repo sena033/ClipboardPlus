@@ -6,12 +6,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     clearHistory: () => ipcRenderer.invoke('clipboard:clearHistory'),
     deleteEntry: (id) => ipcRenderer.invoke('clipboard:deleteEntry', id),
     toggleFavorite: (id) => ipcRenderer.invoke('clipboard:toggleFavorite', id),
+    toggleArchive: (id) => ipcRenderer.invoke('clipboard:toggleArchive', id),
     copyToClipboard: (content) => ipcRenderer.invoke('clipboard:copyToClipboard', content),
     pasteEntry: (content) => ipcRenderer.invoke('clipboard:pasteEntry', content),
   },
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),
     update: (s) => ipcRenderer.invoke('settings:update', s),
+    pickPosition: () => ipcRenderer.invoke('settings:pickPosition'),
   },
   app: {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),

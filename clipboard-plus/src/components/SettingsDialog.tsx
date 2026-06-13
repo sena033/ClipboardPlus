@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { AppSettings } from '../types';
+import type { AppSettings, ThemeMode, WallpaperFit, GroupKey } from '../types';
+import { ALL_GROUPS } from '../types';
 import { t } from '../i18n';
 
 interface Props {
@@ -23,6 +24,10 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
   const [accentColor, setAccentColor] = useState('#89b4fa');
   const [bgColor, setBgColor] = useState('#1e1e2e');
   const [wallpaperPath, setWallpaperPath] = useState('');
+  const [theme, setTheme] = useState<ThemeMode>('dark');
+  const [wallpaperFit, setWallpaperFit] = useState<WallpaperFit>('cover');
+  const [enabledGroups, setEnabledGroups] = useState<GroupKey[]>(ALL_GROUPS);
+  const [groupLabels, setGroupLabels] = useState<Record<string, string>>({});
   const [listening, setListening] = useState(false);
 
   useEffect(() => {
@@ -36,6 +41,10 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
       setAccentColor(settings.accentColor);
       setBgColor(settings.bgColor);
       setWallpaperPath(settings.wallpaperPath);
+      setTheme(settings.theme ?? 'dark');
+      setWallpaperFit(settings.wallpaperFit ?? 'cover');
+      setEnabledGroups(settings.enabledGroups ?? ALL_GROUPS);
+      setGroupLabels(settings.groupLabels ?? {});
       setListening(false);
     }
   }, [open, settings]);
@@ -65,16 +74,47 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
     if (result) setWallpaperPath(result);
   };
 
+  const handlePickPosition = async () => {
+    try {
+      const pos = await window.electronAPI.settings.pickPosition();
+      if (pos) {
+        setPopupX(pos.x);
+        setPopupY(pos.y);
+        setPopupPos('custom');
+      }
+    } catch (_) { /* IPC error */ }
+  };
+
+  const toggleGroup = useCallback((g: GroupKey) => {
+    setEnabledGroups(prev => {
+      if (prev.includes(g)) return prev.filter(x => x !== g);
+      return [...prev, g];
+    });
+  }, []);
+
+  const updateGroupLabel = useCallback((g: GroupKey, label: string) => {
+    setGroupLabels(prev => ({ ...prev, [g]: label }));
+  }, []);
+
   const handleSave = () => {
+    // Clean up empty labels
+    const cleanLabels: Record<string, string> = {};
+    for (const [k, v] of Object.entries(groupLabels)) {
+      if (v.trim()) cleanLabels[k] = v.trim();
+    }
     onSave({
       hotkey, language: lang, maxHistory: maxHist,
       popupPosition: popupPos as any, popupX, popupY,
       accentColor, bgColor, wallpaperPath,
+      theme, wallpaperFit,
+      enabledGroups, groupLabels: cleanLabels,
     });
     onClose();
   };
 
   if (!open) return null;
+
+  const themeModeLabel = theme === 'dark' ? t('settings.theme.dark') : t('settings.theme.light');
 
   return (
     <div className="settings-overlay" onClick={onClose}>
@@ -123,21 +163,39 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
             <option value="custom">{t('settings.popup.custom')}</option>
           </select>
           {popupPos === 'custom' && (
-            <div className="popup-offsets">
-              <div className="popup-offset-field">
-                <span>{t('settings.popup_x')}</span>
-                <input type="number" value={popupX} onChange={e => setPopupX(parseInt(e.target.value) || 0)} />
-              </div>
-              <div className="popup-offset-field">
-                <span>{t('settings.popup_y')}</span>
-                <input type="number" value={popupY} onChange={e => setPopupY(parseInt(e.target.value) || 0)} />
-              </div>
+            <div className="popup-picker">
+              <button className="btn-secondary btn-small" onClick={handlePickPosition}>
+                {t('settings.use_current_pos')}
+              </button>
+              <span className="field-hint pos-coords">
+                {popupX}, {popupY}
+              </span>
+              <span className="field-hint">{t('settings.position_hint')}</span>
             </div>
           )}
         </div>
 
         {/* Theme Section */}
         <div className="settings-section">{t('settings.theme')}</div>
+
+        {/* Theme Mode Toggle */}
+        <div className="settings-field">
+          <label>{t('settings.theme_mode')}</label>
+          <div className="theme-toggle">
+            <button
+              className={`theme-btn${theme === 'dark' ? ' active' : ''}`}
+              onClick={() => setTheme('dark')}
+            >
+              🌙 {t('settings.theme.dark')}
+            </button>
+            <button
+              className={`theme-btn${theme === 'light' ? ' active' : ''}`}
+              onClick={() => setTheme('light')}
+            >
+              ☀️ {t('settings.theme.light')}
+            </button>
+          </div>
+        </div>
 
         {/* Accent Color */}
         <div className="settings-field-row">
@@ -172,6 +230,45 @@ export default function SettingsDialog({ open, settings, onSave, onClose }: Prop
           </div>
           {wallpaperPath && <span className="field-hint file-path">{wallpaperPath}</span>}
         </div>
+
+        {/* Wallpaper Fit */}
+        {wallpaperPath && (
+          <div className="settings-field">
+            <label>{t('settings.wallpaper_fit')}</label>
+            <select value={wallpaperFit} onChange={e => setWallpaperFit(e.target.value as WallpaperFit)}>
+              <option value="cover">{t('settings.fit.cover')}</option>
+              <option value="contain">{t('settings.fit.contain')}</option>
+              <option value="fill">{t('settings.fit.fill')}</option>
+            </select>
+          </div>
+        )}
+
+        {/* Sidebar Groups */}
+        <div className="settings-section">{t('settings.sidebar')}</div>
+        {ALL_GROUPS.map(g => {
+          const defaultLabel = t(`group.${g}`);
+          const currentLabel = groupLabels[g] || '';
+          return (
+            <div key={g} className="settings-field group-setting-row">
+              <label className="group-setting-label">
+                <input
+                  type="checkbox"
+                  checked={enabledGroups.includes(g)}
+                  onChange={() => toggleGroup(g)}
+                />
+                <span>{t('settings.group_visible')}</span>
+                <span className="group-default-name">{defaultLabel}</span>
+              </label>
+              <input
+                className="group-rename-input"
+                type="text"
+                placeholder={defaultLabel}
+                value={currentLabel}
+                onChange={e => updateGroupLabel(g, e.target.value)}
+              />
+            </div>
+          );
+        })}
 
         {/* Actions */}
         <div className="settings-actions">

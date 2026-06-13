@@ -11,9 +11,10 @@ interface Props {
   onPaste: (entry: ClipboardEntry) => void;
   onDelete: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  onToggleArchive: (id: string) => void;
 }
 
-export default function EntryList({ entries, selectedId, onSelect, onCopy, onPaste, onDelete, onToggleFavorite }: Props) {
+export default function EntryList({ entries, selectedId, onSelect, onCopy, onPaste, onDelete, onToggleFavorite, onToggleArchive }: Props) {
   const ref = useRef<HTMLDivElement>(null);
 
   const scrollToSelected = useCallback((id: string) => {
@@ -90,6 +91,7 @@ export default function EntryList({ entries, selectedId, onSelect, onCopy, onPas
             onPaste={() => onPaste(entry)}
             onDelete={() => onDelete(entry.id)}
             onToggleFavorite={() => onToggleFavorite(entry.id)}
+            onToggleArchive={() => onToggleArchive(entry.id)}
           />
         </div>
       ))}
