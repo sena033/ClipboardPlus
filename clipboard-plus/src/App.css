@@ -19,6 +19,7 @@
   --wallpaper-fit: cover;
   --overlay-bg: rgba(0,0,0,0.5);
   --scrollbar-thumb: #45475a;
+  --scrollbar-track: transparent;
 }
 
 /* ── Light Theme ── */
@@ -39,6 +40,7 @@
   --shadow: 0 4px 20px rgba(0,0,0,0.12);
   --overlay-bg: rgba(0,0,0,0.25);
   --scrollbar-thumb: #bbbbbb;
+  --scrollbar-track: transparent;
 }
 
 /* ── Reset ── */
@@ -144,10 +146,15 @@ body {
 
 /* ── Entry ── */
 .content-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.entry-list { flex: 1; overflow-y: auto; padding: 4px; }
-.entry-list::-webkit-scrollbar { width: 6px; }
-.entry-list::-webkit-scrollbar-track { background: transparent; }
-.entry-list::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+/* ── Global Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+.entry-list { flex: 1; overflow-y: auto; padding: 6px; }
 
 .entry-item {
   display: flex; align-items: flex-start; gap: 10px;
@@ -222,8 +229,6 @@ body {
   white-space: pre-wrap; word-break: break-all; line-height: 1.5;
   overflow-y: auto; font-family: 'Cascadia Code','JetBrains Mono','Consolas',monospace;
 }
-.detail-content::-webkit-scrollbar { width: 4px; }
-.detail-content::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 2px; }
 
 /* ── Status Bar ── */
 .status-bar {
