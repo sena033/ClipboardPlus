@@ -47,12 +47,25 @@ jobs:
             -DCMAKE_PREFIX_PATH=/tmp/raylib-install \
             -Draylib_DIR=/tmp/raylib-install/lib/cmake/raylib \
             -DCMAKE_BUILD_TYPE=Release
+      - name: Debug Build Environment
+        shell: bash
+        run: |
+          echo "=== PWD ===" && pwd
+          echo "=== BUILD DIR ===" && ls -la build/
+          echo "=== CMAKE CACHE ===" && head -50 build/CMakeCache.txt 2>/dev/null || echo "no cache"
+          echo "=== Makefile exists? ===" && test -f build/Makefile && echo "YES" || echo "NO"
+          echo "=== Find C files ===" && find . -name "*.c" | head -20
+          echo "=== nproc ===" && nproc
+          echo "=== which make ===" && which mingw32-make
       - name: Build
         shell: bash
         run: |
           set -e
           cd build
-          mingw32-make -j$(nproc)
+          mingw32-make -j$(nproc) VERBOSE=1 2>&1 || {
+            echo "=== Make exited \$? ==="
+            false
+          }
       - name: Upload Windows binary
         uses: actions/upload-artifact@v4
         with:
