@@ -7,6 +7,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     deleteEntry: (id) => ipcRenderer.invoke('clipboard:deleteEntry', id),
     toggleFavorite: (id) => ipcRenderer.invoke('clipboard:toggleFavorite', id),
     copyToClipboard: (content) => ipcRenderer.invoke('clipboard:copyToClipboard', content),
+    pasteEntry: (content) => ipcRenderer.invoke('clipboard:pasteEntry', content),
+  },
+  settings: {
+    get: () => ipcRenderer.invoke('settings:get'),
+    update: (s) => ipcRenderer.invoke('settings:update', s),
   },
   app: {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),

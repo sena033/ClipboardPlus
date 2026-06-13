@@ -1,9 +1,19 @@
+export type ContentType = 'text' | 'image' | 'file';
+
 export interface ClipboardEntry {
   id: string;
-  type: 'text' | 'image' | 'file';
+  type: ContentType;
   content: string;
   timestamp: number;
   favorite: boolean;
+}
+
+export type GroupKey = 'all' | 'favorites' | 'today' | 'yesterday' | 'week' | 'month' | 'older';
+
+export interface AppSettings {
+  hotkey: string;
+  language: 'zh' | 'en';
+  maxHistory: number;
 }
 
 export interface ElectronAPI {
@@ -13,6 +23,10 @@ export interface ElectronAPI {
     deleteEntry: (id: string) => Promise<void>;
     toggleFavorite: (id: string) => Promise<void>;
     copyToClipboard: (content: string) => Promise<void>;
+  };
+  settings: {
+    get: () => Promise<AppSettings>;
+    update: (settings: Partial<AppSettings>) => Promise<void>;
   };
   app: {
     getVersion: () => Promise<string>;
