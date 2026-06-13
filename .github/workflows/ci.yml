@@ -47,25 +47,27 @@ jobs:
             -DCMAKE_PREFIX_PATH=/tmp/raylib-install \
             -Draylib_DIR=/tmp/raylib-install/lib/cmake/raylib \
             -DCMAKE_BUILD_TYPE=Release
-      - name: Debug Build Environment
-        shell: bash
-        run: |
-          echo "=== PWD ===" && pwd
-          echo "=== BUILD DIR ===" && ls -la build/
-          echo "=== CMAKE CACHE ===" && head -50 build/CMakeCache.txt 2>/dev/null || echo "no cache"
-          echo "=== Makefile exists? ===" && test -f build/Makefile && echo "YES" || echo "NO"
-          echo "=== Find C files ===" && find . -name "*.c" | head -20
-          echo "=== nproc ===" && nproc
-          echo "=== which make ===" && which mingw32-make
       - name: Build
         shell: bash
         run: |
-          set -e
           cd build
-          mingw32-make -j$(nproc) VERBOSE=1 2>&1 || {
-            echo "=== Make exited \$? ==="
-            false
-          }
+          set -o pipefail
+          mingw32-make VERBOSE=1 2>&1 | tee ../build-output.log
+      - name: Show build errors in job summary
+        if: failure()
+        shell: bash
+        run: |
+          echo "## Build Error Output (last 50 lines)" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -50 build-output.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-failure-logs
+          path: build-output.log
+          retention-days: 7
       - name: Upload Windows binary
         uses: actions/upload-artifact@v4
         with:
